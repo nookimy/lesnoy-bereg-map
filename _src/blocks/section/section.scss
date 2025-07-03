@@ -1,68 +1,48 @@
-.section {
-    @include container;
-    aspect-ratio: 2 / 1;
-    background-position: center;
-    background-repeat: no-repeat;
-
-    & picture {
-        line-height: 0;
-        padding: 0;
-        margin: 0;
-        display: block;
-    }
-
-    &__img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-    }
-
-    .webp & {
-        background-image: image-set(
-            '../section/nophoto-100.webp' 1x,
-            '../section/nophoto-100@2x.webp' 2x,
-            '../section/nophoto-100@3x.webp' 3x
-            );
+:root {
+    /*Свободные пустые участки*/
+    --free-object-color: #23DD00;
+    /*Проданные участки*/
+    --sold-object-color: #FF4000;
+}
     
-            @media (min-width: $md-width) {
-                background-image: image-set(
-                '../section/nophoto-250.webp' 1x,
-                '../section/nophoto-250@2x.webp' 2x,
-                '../section/nophoto-250@3x.webp' 3x
-                );
-            }
-    
-            @media (min-width: $xl-width) {
-                background-image: image-set(
-                '../section/nophoto-500.webp' 1x,
-                '../section/nophoto-500@2x.webp' 2x,
-                '../section/nophoto-500@3x.webp' 3x
-                );
-            }
-    }
 
-    .no-webp & {
-        background-image: image-set(
-        '../section/nophoto-100.png' 1x,
-        '../section/nophoto-100@2x.png' 2x,
-        '../section/nophoto-100@3x.png' 3x
-        );
 
-        @media (min-width: $md-width) {
-            background-image: image-set(
-            '../section/nophoto-250.png' 1x,
-            '../section/nophoto-250@2x.png' 2x,
-            '../section/nophoto-250@3x.png' 3x
-            );
-        }
+.map {
+    width: 100%;
+    height: auto;
 
-        @media (min-width: $xl-width) {
-            background-image: image-set(
-            '../section/nophoto-500.png' 1x,
-            '../section/nophoto-500@2x.png' 2x,
-            '../section/nophoto-500@3x.png' 3x
-            );
+    & .object {
+        cursor: pointer;
+
+        &:hover {
+            opacity: 1;
         }
     }
+}
+
+.object {
+    &_2_11,
+    &_2_12,
+    &_2_13,
+    &_2_14,
+    &_2_15,
+    &_2_16,
+    &_2_17,
+    &_2_18,
+    &_2_19,
+    &_2_110,
+    &_2_111,
+    &_2_112,
+    &_2_113,
+    &_2_114,
+    &_2_115,
+    &_2_116,
+    &_2_117,
+    &_2_118, {
+        fill: var(--free-object-color);
+    }
+
+
+
+    
 }
