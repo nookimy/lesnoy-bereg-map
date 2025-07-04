@@ -1,0 +1,49 @@
+@charset "UTF-8";
+
+:root {
+  /*Свободные пустые участки*/
+  --free-object-color: #23DD00;
+  /*Проданные участки*/
+  --sold-object-color: #FF4000;
+}
+
+svg path {
+  cursor: pointer;
+  transition: opacity 0.5s ease;
+}
+
+svg path:hover {
+  opacity: 1;
+}
+
+path#p1-1 {
+  fill: var(--free-object-color);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#container {
+  width: 100vw;
+  height: 100vh;
+  background: #f0f0f0;
+  cursor: grab;
+  position: relative;
+}
+
+svg {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  display: block;
+}
+
+#inner {
+  transition: transform 0.2s ease-out;
+  transform-origin: 0 0;
+}
+/*# sourceMappingURL=style.css.map */
