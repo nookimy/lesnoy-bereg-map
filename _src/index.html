@@ -7,7 +7,7 @@
 	</head>
 	<body>
 		<include src="./_src/blocks/section/section.html"></include>
-		<script>
+<script>
     const container = document.getElementById('container');
     const svg = document.getElementById('svg');
     const inner = document.getElementById('inner');
@@ -16,17 +16,32 @@
     const svgWidth = viewBox.width;
     const svgHeight = viewBox.height;
 
-    let scale = 1; // Стартовый масштаб = 1
+    let scale = 1;
     let translate = { x: 0, y: 0 };
     let isDragging = false;
     let start = { x: 0, y: 0 };
+    let lastTouchDist = null;
+    let lastTouchMid = null;
 
     function clamp(val, min, max) {
       return Math.max(min, Math.min(max, val));
     }
 
     function getMinScale() {
-      return container.clientWidth / svgWidth; // всё ещё пригодится для ограничения
+      return Math.max(
+        container.clientWidth / svgWidth,
+        container.clientHeight / svgHeight
+      );
+    }
+
+    function setTransition(enabled, mode = 'mouse') {
+      if (!enabled) {
+        inner.style.transition = 'none';
+      } else if (mode === 'touch') {
+        inner.style.transition = 'transform 0.05s linear';
+      } else {
+        inner.style.transition = 'transform 0.2s ease-out';
+      }
     }
 
     function updateTransform() {
@@ -48,31 +63,29 @@
       inner.style.transform = `translate(${translate.x}px, ${translate.y}px) scale(${scale})`;
     }
 
-    svg.addEventListener("wheel", (e) => {
-      e.preventDefault();
+    function centerInitialView() {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
 
-      const zoomSpeed = 0.0005;
-      const oldScale = scale;
-      scale += -e.deltaY * zoomSpeed;
+      // Масштабируем по большей оси — заполняем экран с возможной обрезкой
+      scale = Math.max(
+        containerWidth / svgWidth,
+        containerHeight / svgHeight
+      );
 
-      const minScale = getMinScale();
-      scale = clamp(scale, minScale, 4);
+      const scaledWidth = svgWidth * scale;
+      const scaledHeight = svgHeight * scale;
 
-      const rect = svg.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      const dx = mouseX - translate.x;
-      const dy = mouseY - translate.y;
-
-      translate.x -= dx * (scale / oldScale - 1);
-      translate.y -= dy * (scale / oldScale - 1);
+      translate.x = (containerWidth - scaledWidth) / 2;
+      translate.y = (containerHeight - scaledHeight) / 2;
 
       updateTransform();
-    });
+    }
 
+    // 🖱 Мышь
     svg.addEventListener("mousedown", (e) => {
       isDragging = true;
+      setTransition(false);
       start = { x: e.clientX - translate.x, y: e.clientY - translate.y };
       svg.style.cursor = "grabbing";
     });
@@ -91,21 +104,105 @@
       svg.style.cursor = "grab";
     });
 
-    function centerInitialView() {
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
+    svg.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      setTransition(true, 'mouse');
 
-      const scaledWidth = svgWidth * scale;
-      const scaledHeight = svgHeight * scale;
+      const zoomSpeed = 0.0005;
+      const oldScale = scale;
+      scale += -e.deltaY * zoomSpeed;
 
-      translate.x = (containerWidth - scaledWidth) / 2;
-      translate.y = (containerHeight - scaledHeight) / 2;
+      scale = clamp(scale, getMinScale(), 4);
+
+      const rect = svg.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const dx = mouseX - translate.x;
+      const dy = mouseY - translate.y;
+
+      translate.x -= dx * (scale / oldScale - 1);
+      translate.y -= dy * (scale / oldScale - 1);
 
       updateTransform();
+    });
+
+    // 📱 Тач
+    svg.addEventListener("touchstart", (e) => {
+      setTransition(true, 'touch');
+
+      if (e.touches.length === 1) {
+        isDragging = true;
+        const touch = e.touches[0];
+        start = { x: touch.clientX - translate.x, y: touch.clientY - translate.y };
+      } else if (e.touches.length === 2) {
+        lastTouchDist = getDistance(e.touches[0], e.touches[1]);
+        lastTouchMid = getMidpoint(e.touches[0], e.touches[1]);
+      }
+    });
+
+    svg.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      setTransition(true, 'touch');
+
+      if (e.touches.length === 1 && isDragging) {
+        const touch = e.touches[0];
+        translate = {
+          x: touch.clientX - start.x,
+          y: touch.clientY - start.y
+        };
+        updateTransform();
+      } else if (e.touches.length === 2) {
+        const dist = getDistance(e.touches[0], e.touches[1]);
+        const mid = getMidpoint(e.touches[0], e.touches[1]);
+
+        if (lastTouchDist && lastTouchMid) {
+          const oldScale = scale;
+          const scaleFactor = dist / lastTouchDist;
+          scale *= scaleFactor;
+
+          scale = clamp(scale, getMinScale(), 4);
+
+          const dx = mid.x - translate.x;
+          const dy = mid.y - translate.y;
+
+          translate.x -= dx * (scale / oldScale - 1);
+          translate.y -= dy * (scale / oldScale - 1);
+
+          updateTransform();
+        }
+
+        lastTouchDist = dist;
+        lastTouchMid = mid;
+      }
+    });
+
+    svg.addEventListener("touchend", (e) => {
+      if (e.touches.length < 2) {
+        lastTouchDist = null;
+        lastTouchMid = null;
+      }
+      if (e.touches.length === 0) {
+        isDragging = false;
+      }
+    });
+
+    function getDistance(p1, p2) {
+      const dx = p2.clientX - p1.clientX;
+      const dy = p2.clientY - p1.clientY;
+      return Math.hypot(dx, dy);
     }
 
+    function getMidpoint(p1, p2) {
+      return {
+        x: (p1.clientX + p2.clientX) / 2,
+        y: (p1.clientY + p2.clientY) / 2
+      };
+    }
+
+    // 🚀 Инициализация
     window.addEventListener("resize", centerInitialView);
-    centerInitialView(); // Центрируем при загрузке
+    centerInitialView();
   </script>
 	</body>
 </html>
