@@ -1,145 +1,99 @@
-function testWebP(callback) {
-    var webP = new Image();
-    webP.onload = webP.onerror = function () {
-        callback(webP.height == 2);
-    };
-    webP.src = "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA";
-}
 
-testWebP(function (support) {
-    let className = support === true ? 'webp' : 'no-webp';
-    document.documentElement.classList.add(className);
-});
+    const container = document.getElementById('container');
+    const svg = document.getElementById('svg');
+    const inner = document.getElementById('inner');
 
-/*Модальные окна*/
+    const viewBox = svg.viewBox.baseVal;
+    const svgWidth = viewBox.width;
+    const svgHeight = viewBox.height;
 
-const body = document.querySelector('body');
-const lockPadding = document.querySelectorAll('.lock-padding');
-const modalLinks = document.querySelectorAll('.modal-link');
-let unlock = true;
-const timeout = 800;
+    let scale = 1; // Стартовый масштаб = 1
+    let translate = { x: 0, y: 0 };
+    let isDragging = false;
+    let start = { x: 0, y: 0 };
 
-
-// Клик по ссылке для открытия модального окна
-if (modalLinks.length > 0) {
-    for (let index = 0; index < modalLinks.length; index++) {
-        const modalLink = modalLinks[index];
-        modalLink.addEventListener("click", function (e) {
-            const modalName = modalLink.getAttribute('href').replace('#', '');
-            const curentModal = document.getElementById(modalName);
-            modalOpen(curentModal);
-            e.preventDefault();
-        });
-    }
-}
-
-// Закрытие модального окна при клике
-const modalCloseIcon = document.querySelectorAll('.modal__close-btn');
-if (modalCloseIcon.length > 0) {
-    for (let index = 0; index < modalCloseIcon.length; index++) {
-        const el = modalCloseIcon[index];
-        el.addEventListener("click", function (e) {            
-            modalClose(el.closest('.modal'));
-            e.preventDefault();
-        });
-    }
-}
-
-// Открытие модального окна
-function modalOpen(curentModal) {
-    if (curentModal && unlock) {
-        const modalActive = document.querySelector('.modal--open');
-        if (modalActive) {
-            modalClose(modalActive, false);
-        } else {
-            bodyLock();
-        }
-        curentModal.classList.add('modal--open');
-        curentModal.addEventListener("click", function (e) {
-            if (!e.target.closest('.modal__content')) {
-                modalClose(e.target.closest('.modal'));
-            }
-        });
-    }
-}
-
-function modalClose(modalActive, doUnlock = true) {
-    if (unlock) {
-        modalActive.classList.remove('modal--open');
-        if (doUnlock) {
-            bodyUnLock();
-        }
-    }
-}
-
-function bodyLock() {
-
-    const lockPaddingValue = window.innerWidth - document.querySelector('main').offsetWidth + 'px';
-
-    if (lockPadding.length > 0) {
-        for (let index = 0; index < lockPadding.length; index++) {
-            const el = lockPadding[index];
-            el.style.paddingRight = lockPaddingValue;
-        }
+    function clamp(val, min, max) {
+      return Math.max(min, Math.min(max, val));
     }
 
-    body.style.paddingRight = lockPaddingValue;
-    body.classList.add('lock');
-
-    unlock = false;
-    setTimeout(function () {
-        unlock = true;
-    }, timeout);
-}
-
-function bodyUnLock() {
-    setTimeout(function () {
-        if (lockPadding.length > 0) {
-            for (let index = 0; index < lockPadding.length; index++) {
-                const el = lockPadding[index];
-                el.style.paddingRight =  '0px';
-            }
-        }
-
-        body.style.paddingRight = '0px';
-        body.classList.remove('lock');
-    }, timeout);
-
-    unlock = false;
-    setTimeout(function () {
-        unlock = true;
-    }, timeout);
-}
-
-document.addEventListener('keydown', function (e) {
-    if (e.which === 27) {
-        const modalActive = document.querySelector('.modal--open');
-        modalClose(modalActive);
+    function getMinScale() {
+      return container.clientWidth / svgWidth; // всё ещё пригодится для ограничения
     }
-});
 
-(function () {
-    // проверяем поддержку
-    if (!Element.prototype.closest) {
-        // реализуем
-        Element.prototype.closest = function (css) {
-            var node = this;
-            while (node) {
-                if (node.matches(css)) return node;
-                else node = node.parentElement;
-            }
-            return null;
-        };
-    }
-})();
+    function updateTransform() {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
 
-(function () {
-    // проверяем поддержку
-    if (!Element.prototype.matches) {
-        // определяем свойство
-        Element.prototype.matches = Element.prototype.matchesSelector ||
-            Element.prototype.webkitMatchesSelector ||
-            Element.prototype.mozMatchesSelector ||
-            Element.prototype.msMatchesSelector;
+      const scaledWidth = svgWidth * scale;
+      const scaledHeight = svgHeight * scale;
+
+      const minX = Math.min(0, containerWidth - scaledWidth);
+      const minY = Math.min(0, containerHeight - scaledHeight);
+
+      const maxX = 0;
+      const maxY = 0;
+
+      translate.x = clamp(translate.x, minX, maxX);
+      translate.y = clamp(translate.y, minY, maxY);
+
+      inner.style.transform = `translate(${translate.x}px, ${translate.y}px) scale(${scale})`;
     }
-})();
+
+    svg.addEventListener("wheel", (e) => {
+      e.preventDefault();
+
+      const zoomSpeed = 0.0005;
+      const oldScale = scale;
+      scale += -e.deltaY * zoomSpeed;
+
+      const minScale = getMinScale();
+      scale = clamp(scale, minScale, 4);
+
+      const rect = svg.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const dx = mouseX - translate.x;
+      const dy = mouseY - translate.y;
+
+      translate.x -= dx * (scale / oldScale - 1);
+      translate.y -= dy * (scale / oldScale - 1);
+
+      updateTransform();
+    });
+
+    svg.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      start = { x: e.clientX - translate.x, y: e.clientY - translate.y };
+      svg.style.cursor = "grabbing";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      translate = {
+        x: e.clientX - start.x,
+        y: e.clientY - start.y
+      };
+      updateTransform();
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+      svg.style.cursor = "grab";
+    });
+
+    function centerInitialView() {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      const scaledWidth = svgWidth * scale;
+      const scaledHeight = svgHeight * scale;
+
+      translate.x = (containerWidth - scaledWidth) / 2;
+      translate.y = (containerHeight - scaledHeight) / 2;
+
+      updateTransform();
+    }
+
+    window.addEventListener("resize", centerInitialView);
+    centerInitialView(); // Центрируем при загрузке

@@ -7,12 +7,10 @@
     
 
 
-.map {
-    width: 100%;
-    height: auto;
-
-    & .object {
+svg {
+    & path {
         cursor: pointer;
+        transition: opacity 0.5s ease;
 
         &:hover {
             opacity: 1;
@@ -20,29 +18,30 @@
     }
 }
 
-.object {
-    &_2_11,
-    &_2_12,
-    &_2_13,
-    &_2_14,
-    &_2_15,
-    &_2_16,
-    &_2_17,
-    &_2_18,
-    &_2_19,
-    &_2_110,
-    &_2_111,
-    &_2_112,
-    &_2_113,
-    &_2_114,
-    &_2_115,
-    &_2_116,
-    &_2_117,
-    &_2_118, {
-        fill: var(--free-object-color);
+path#p1-1 {
+    fill: var(--free-object-color);
+}
+
+html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
     }
 
+    #container {
+      width: 100vw;
+      height: 100vh;
+      background: #f0f0f0;
+      cursor: grab;
+      position: relative;
+    }
 
+    svg {
+      user-select: none;
+      display: block;
+    }
 
-    
-}
+    #inner {
+      transition: transform 0.2s ease-out;
+      transform-origin: 0 0;
+    }
